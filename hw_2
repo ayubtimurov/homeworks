@@ -1,0 +1,26 @@
+from PySide6.QtWidgets import QApplication, QTextEdit, QVBoxLayout, QWidget
+
+class StickyNotes(QWidget):
+    def __init__(self):
+        super().__init__()
+        self.app = app
+        self.setWindowTitle("Sticky Notes")
+        self.setFixedSize(400, 300)
+
+        self.text_edit = QTextEdit(self)
+        self.text_edit.setStyleSheet("""
+            QTextEdit {
+                background-color: yellow;
+                color: #333;
+                font-size: 14px;
+                border: none;
+            }
+        """)
+        layout = QVBoxLayout()
+        layout.addWidget(self.text_edit)
+        self.setLayout(layout)
+
+app = QApplication()
+window = StickyNotes()
+window.show()
+app.exec()  
