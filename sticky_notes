@@ -1,6 +1,6 @@
 import sys
 
-from database import Note
+from database import Note, session
 from PySide6.QtWidgets import (QApplication, QSystemTrayIcon, QTextEdit, QHBoxLayout, 
  QVBoxLayout, QWidget, QPushButton, QMenu)
 from PySide6.QtCore import Qt
@@ -36,19 +36,53 @@ class StickyNotes(QWidget):
         self.setLayout(layout)
 
         active_notewindows[id(self)] = self
-
+        
+        if note is None:
+            self.note = Note()
+            self.save
+        else:
+            self.note = note
+            self.load()
 
     def mousePressEvent(self, e):
-        self.prvs_pst = e.globalPosition()
+        self.previous_pos = e.globalPosition()
 
     def mouseMoveEvent(self, e):
-        delta = e.globalPosition() - self.prvs_pst
+        delta = e.globalPosition() - self.previous_pos
         self.move(self.x() + delta.x(), self.y() + delta.y())
-        self.prvs_pst = e.globalPosition()
+        self.previous_pos = e.globalPosition()
+
+    def mouseReleaseEvent(self, e):
+        self.save()
+
+    def load(self):
+        self.move(self.note.x, self.note.y)
+        self.text.setText(self.note.text)
+
+    def save(self):
+        self.note.x = self.x()
+        self.note.y = self.y()
+        self.note.text = self.text.toPlainText()
+        session.add(self.note)
+        session.commit()
+
+    def delete(self):
+        session.delete(self.note)
+        session.commit()
+        del active_notewindows[id(self)]
+        self.close()    
 
 def create_notewindow():
     note = StickyNotes()
     note.show()
+
+existing_notes = session.query(Note).all()
+
+if existing_notes:
+    for note in existing_notes:
+        create_notewindow(note)
+else:
+    create_notewindow()
 
 icon = QIcon("sticky_note2.png")
 
