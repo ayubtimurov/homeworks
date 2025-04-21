@@ -1,5 +1,6 @@
 import sys
 
+from database import Note
 from PySide6.QtWidgets import (QApplication, QSystemTrayIcon, QTextEdit, QHBoxLayout, 
  QVBoxLayout, QWidget, QPushButton, QMenu)
 from PySide6.QtCore import Qt
@@ -10,7 +11,7 @@ app = QApplication(sys.argv)
 active_notewindows = {}
 
 class StickyNotes(QWidget):
-    def __init__(self):
+    def __init__(self, note=None):
         super().__init__()
         self.app = app
         self.setWindowFlags(
@@ -35,6 +36,7 @@ class StickyNotes(QWidget):
         self.setLayout(layout)
 
         active_notewindows[id(self)] = self
+
 
     def mousePressEvent(self, e):
         self.prvs_pst = e.globalPosition()
