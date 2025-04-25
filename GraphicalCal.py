@@ -1,8 +1,8 @@
 import sys
 
-import numpy as np
+import numpy as np 
 from PySide6.QtWidgets import (
-    QApplication, QVBoxLayout, QHBoxLayout, QLineEdit, QPushButton, QWidget
+    QApplication, QVBoxLayout, QHBoxLayout, QLineEdit, QPushButton, QWidget, QMainWindow
 )
 from matplotlib.backends.backend_qt5agg import FigureCanvasQTAgg as FigureCanvas
 from matplotlib.figure import Figure
@@ -14,9 +14,8 @@ class GraphingCalculator(QWidget):
         self.setGeometry(100, 100, 800, 600)
 
         self.input_function = QLineEdit()
-        self.input_function.setPlaceholderText("Enter function")
-        self.plot_button = QPushButton("Plot Graph")
-        self.plot_button.clicked.connect(self.plot_graph)
+        self.input_function.setPlaceholderText("Enter function (To plot the graph press Enter)")
+        self.input_function.returnPressed.connect(self.plot_graph)
 
         self.figure = Figure()
         self.canvas = FigureCanvas(self.figure)
@@ -24,7 +23,7 @@ class GraphingCalculator(QWidget):
 
         input_layout = QHBoxLayout()
         input_layout.addWidget(self.input_function)
-        input_layout.addWidget(self.plot_button)
+        #input_layout.addWidget(self.plot_button)
 
         layout = QVBoxLayout()
         layout.addLayout(input_layout)
@@ -36,14 +35,16 @@ class GraphingCalculator(QWidget):
         try:
             function_str =  self.input_function.text()
             x = np.linspace(-10, 10, 100)
+            safe_function_str = function_str.replace("^", "**")
+            print(safe_function_str)
             namespace = {
                 "x": x, "np": np, "sin": np.sin, "cos": np.cos,
                 "tan": np.tan, "log": np.log, "sqrt": np.sqrt
             }
-            y = eval(function_str, namespace)
+            y = eval(safe_function_str, namespace)
 
             self.ax.clear()
-            self.ax.plot(x, y)
+            self.ax.plot(x, y, label=f"y = {function_str}")
             self.ax.set_xlabel("x")
             self.ax.set_ylabel("y")
             self.ax.grid(True)

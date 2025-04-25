@@ -14,7 +14,7 @@ class LinearPlotCanvas(FigureCanvas):
 
         self.m = 2
         self.b = 1
-        self.plot_line()    
+        self.plot_line()     
 
     def plot_line(self, m_point=2, x_point=None, b_point=1):
         self.ax.clear()
