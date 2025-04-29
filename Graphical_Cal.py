@@ -5,6 +5,7 @@ from PySide6.QtWidgets import (
     QApplication, QVBoxLayout, QHBoxLayout, QLineEdit, QPushButton, QWidget, QMainWindow
 )
 from matplotlib.backends.backend_qt5agg import FigureCanvasQTAgg as FigureCanvas
+from matplotlib.backends.backend_qtagg import NavigationToolbar2QT as NavigationToolbar
 from matplotlib.figure import Figure
 
 class GraphingCalculator(QWidget):
@@ -19,22 +20,24 @@ class GraphingCalculator(QWidget):
 
         self.figure = Figure()
         self.canvas = FigureCanvas(self.figure)
+        self.toolbar = NavigationToolbar(self.canvas, self)
         self.ax = self.figure.add_subplot(111)
 
-        input_layout = QHBoxLayout()
+        input_layout = QVBoxLayout()
         input_layout.addWidget(self.input_function)
         #input_layout.addWidget(self.plot_button)
 
         layout = QVBoxLayout()
         layout.addLayout(input_layout)
         layout.addWidget(self.canvas)
+        layout.addWidget(self.toolbar)
         
         self.setLayout(layout)
 
     def plot_graph(self):
         try:
             function_str =  self.input_function.text()
-            x = np.linspace(-10, 10, 100)
+            x = np.linspace(-10, 10, 10)
             safe_function_str = function_str.replace("^", "**")
             print(safe_function_str)
             namespace = {
@@ -49,11 +52,11 @@ class GraphingCalculator(QWidget):
             self.ax.set_ylabel("y")
             self.ax.grid(True)
             self.canvas.draw()
-
+            self.ax.legend()
+            
         except Exception as e:
             print(f"Error: {e}")
             self.input_function.setText("Invalid function")
-
 
 if __name__ == "__main__":
     app = QApplication(sys.argv)

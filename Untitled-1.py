@@ -1,54 +1,24 @@
-import sys
 
 import numpy as np
-from PySide6.QtWidgets import (
-    QApplication, QVBoxLayout, QHBoxLayout, QLineEdit, QPushButton, QWidget, QLabel
-)
-from matplotlib.backends.backend_qt5agg import FigureCanvasQTAgg as FigureCanvas
-from matplotlib.figure import Figure
+import matplotlib.pyplot as plt
 
-class Graph(FigureCanvas):
-    def __init__(self, parent=None):
-        self.fig = Figure(figsize=(5, 4))
-        self.ax = self.fig.add_subplot(111)
-        super().__init__(self.fig)
-        self.setParent(parent)
-        
+fig, ax = plt.subplots()
 
-    def plot_graph(self):
-        try:
-            function_str = self.input_function.text()
-            x = np.linspace(-10, 10, 100)
-            namespace = {
-                "x": x, "np": np, "sin": np.sin, "cos": np.cos,
-                "tan": np.tan, "log": np.log, "sqrt": np.sqrt
-            }
-            y = eval(function_str, namespace)
+x = np.linspace(-10, 10, 100)
+y1 = np.log(x)
+y2 = np.sin(x)
+y3 = x**3
 
-            self.ax.clear()
-            self.ax.plot(x, y, label=f"y = {function_str}")
-            self.ax.set_xlabel("x")
-            self.ax.set_ylabel("y")
-            self.ax.grid(True)
-            self.ax.legend()
-            self.draw()
-        except Exception as e:
-            print(f"Error: {e}")
-            self.input_function.setText("Invalid function")
+ax.set_xlim([-10, 10])
+ax.set_ylim([-10, 10])
 
-class GraphicalCalculator(QWidget):
-    def __init__(self):
-        super().__init__()
-        self.setWindowTitle("Graphing Calculator")
-        self.setGeometry(100, 100, 800, 600)
+plt.plot(x, y1, label="y = log(x)")
+plt.plot(x, y2, label="y = sin(x)")
+plt.plot(x, y3, label="y = x^3")
+plt.xlabel("x")
+plt.ylabel("y", rotation= 0)
+plt.title("Multiple Graphs")
+plt.grid(True)
+plt.legend()
 
-        widget = QWidget()
-        layout = QVBoxLayout()
-
-        
-
-if __name__ == "__main__":
-    app = QApplication(sys.argv)
-    window = GraphicalCalculator()
-    window.show()
-    sys.exit(app.exec())     
+plt.show()
