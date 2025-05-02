@@ -148,7 +148,7 @@ class GraphingCalculator(QWidget):
             except Exception as e:
                 print("Invalid function:", e)
                 return
-        
+
             self.ax.clear()
             self.ax.plot(x, y, label=f"y = {function}", color='blue')
             self.ax.plot()
