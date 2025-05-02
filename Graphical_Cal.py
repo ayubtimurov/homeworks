@@ -3,6 +3,7 @@ import numpy as np
 import sympy as sp
 from sympy import Symbol
 from sympy.solvers import solve
+from PySide6.QtCore import Slot
 from PySide6.QtWidgets import (
     QApplication, QVBoxLayout, QLineEdit, QPushButton, QWidget, QLabel, QHBoxLayout, QGridLayout
 )
@@ -18,7 +19,7 @@ class GraphingCalculator(QWidget):
         self.setWindowTitle("Graphing Calculator")
 
         self.input_function = QLineEdit()
-        self.input_function.setPlaceholderText("Enter function (To plot the graph press Enter)")
+        self.input_function.setPlaceholderText("Enter your function")
 
         self.plot_button = QPushButton("Plot")
         self.plot_button.clicked.connect(self.plot_graph)
@@ -34,12 +35,16 @@ class GraphingCalculator(QWidget):
         self.intg_button = QPushButton("Integrate")
         self.intg_button.hide()
         self.intg_button.clicked.connect(self.integrate)
+        self.clear_button = QPushButton("Clear")
+        self.clear_button.clicked.connect(self.clear)
 
         self.point_a = QLineEdit()
         self.point_a.setPlaceholderText("Enter lower limit")
+        self.point_a.textChanged.connect(self.integrate)
         self.point_a.hide()
         self.point_b = QLineEdit()
         self.point_b.setPlaceholderText("Enter upper limit")
+        self.point_b.textChanged.connect(self.integrate)
         self.point_b.hide()
 
         self.area_label = QLabel()
@@ -52,8 +57,10 @@ class GraphingCalculator(QWidget):
         self.figure = Figure(figsize=(5, 4))
         self.canvas = FigureCanvas(self.figure)
         self.ax = self.figure.add_subplot(111)
+        self.ax.grid(True)
 
         toolbar = NavigationToolbar(self.canvas, self)
+        self.cursor = Cursor(self.ax, horizOn=True, vertOn=True, useblit=True, color='red', linewidth=1)
 
         input_layout = QHBoxLayout()
         input_layout.addWidget(self.input_function)
@@ -68,7 +75,6 @@ class GraphingCalculator(QWidget):
         input_limits_layout.addWidget(self.point_a)
         input_limits_layout.addWidget(self.point_b)
 
-        self.cursor = Cursor(self.ax, horizOn=True, vertOn=True, useblit=True, color='red', linewidth=1)
 
         layout = QVBoxLayout()
         layout.addWidget(toolbar)
@@ -78,6 +84,7 @@ class GraphingCalculator(QWidget):
         layout.addLayout(input_limits_layout)
         layout.addWidget(self.canvas)
         layout.addWidget(self.area_label)
+        layout.addWidget(self.clear_button)
 
         self.setLayout(layout)
 
@@ -121,7 +128,7 @@ class GraphingCalculator(QWidget):
 
             try:
                 y = eval(function, {"x": x, "np": np, "__builtins__": {}})
-                dfdx = np.gradient(y, x)
+                dfdx = np.gradient(function, x)
             except Exception as e:
                 print("Invalid function:", e)
                 return
@@ -149,6 +156,7 @@ class GraphingCalculator(QWidget):
             self.ax.legend()
             self.canvas.draw()
 
+    @Slot()
     def integrate(self):
             function = self.input_function.text()
             a = float(self.point_a.text())
@@ -180,9 +188,9 @@ class GraphingCalculator(QWidget):
         function  = self.input_function.text()
         x = np.linspace(-10, 10, 400)
 
-        x = Symbol('x', 'sin')
+        x = Symbol('x')
         diff = solve(sp.diff(function, x))
-        input = round(float(diff[0]), 2)
+        input = round(float(diff[0]), 1)
         def eval_func(function, x):
             safe_globals = {"x": x, "np": np, "__builtins__": {}}
 
@@ -193,7 +201,7 @@ class GraphingCalculator(QWidget):
                 print("Invalid function:", e)
                 return f"Error: {e}"
             
-        output = round(eval_func(function, input),2)
+        output = round(eval_func(function, input), 1)
 
         x_min = [input]
         y_min = [output]
@@ -206,11 +214,23 @@ class GraphingCalculator(QWidget):
             return
         
         self.ax.clear()
-        #self.ax.plot(x, y, label=f"y = {function}", color='blue' )
+        self.ax.plot(x, y, label=f"y = {function}", color='blue' )
         self.ax.plot(x_min, y_min, 'ro')
         self.ax.grid(True)
         self.ax.legend()
         self.canvas.draw()
+
+    def clear(self):
+        self.input_function.clear()
+        self.diff_button.hide()
+        self.intg_button.hide()
+        self.point_a.hide()
+        self.point_b.hide()
+        self.area_label.hide()
+        self.local_min_max.hide()
+        self.ax.clear()    
+        self.ax.grid(True)
+
 
 if __name__ == "__main__":
     app = QApplication(sys.argv)

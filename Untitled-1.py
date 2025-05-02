@@ -1,13 +1,26 @@
-import matplotlib.pyplot as plt
-import numpy as np
+from PySide6.QtWidgets import QApplication, QWidget, QLineEdit, QVBoxLayout, QLabel
+from PySide6.QtCore import Slot
 
-# Generate sample data
-x = np.linspace(0, 10, 100)
-y = np.sin(x)
+class MyWidget(QWidget):
+    def __init__(self):
+        super().__init__()
 
-# Create a plot
-fig, ax = plt.subplots()
-ax.plot(x, y)
+        self.input_field = QLineEdit()
+        self.output_label = QLabel("No input yet")
 
-# Display the plot with interactive zoom enabled
-plt.show()
+        layout = QVBoxLayout()
+        layout.addWidget(self.input_field)
+        layout.addWidget(self.output_label)
+        self.setLayout(layout)
+
+        self.input_field.textChanged.connect(self.on_text_changed)
+
+    @Slot()
+    def on_text_changed(self, new_text):
+         self.output_label.setText(f"Input changed to: {new_text}")
+
+if __name__ == "__main__":
+    app = QApplication([])
+    widget = MyWidget()
+    widget.show()
+    app.exec()
