@@ -162,27 +162,43 @@ class GraphingCalculator(QWidget):
             a = float(self.point_a.text())
             b = float(self.point_b.text())
             x = np.linspace(-10, 10, 400)
+            a_test = str(a)
+            b_test = str(b)
 
             expression = lambda x: eval(function)
             area = integrate.quad(expression, a, b)
-            try:
-                y = eval(function, {"x": x, "np": np, "__builtins__": {}})
-            except Exception as e:
-                print("Invalid function:", e)
-                return
+            if a_test == "" or b_test == "":
+                try:
+                    y = eval(function, {"x": x, "np": np, "__builtins__": {}})
+                except Exception as e:
+                    print("Invalid function:", e)
+                    return
             
-            self.ax.clear()
-            self.ax.plot(x, y, label=f"y = {function}", color='blue')
-            self.ax.fill_between(
-                x, y, 0,
-                where=(x > a) & (x < b),
-                color='green', alpha=0.5
-            )
-            area1 = area[0]
-            self.area_label.setText(f"Area under the curve: {area1:.2f}")
-            self.ax.grid(True)
-            self.ax.legend()
-            self.canvas.draw()
+                self.ax.clear()
+                self.ax.plot(x, y, label=f"y = {function}", color='blue')
+                self.ax.grid(True)
+                self.ax.legend()
+                self.canvas.draw()
+            else:
+                try:
+                    y = eval(function, {"x": x, "np": np, "__builtins__": {}})
+                except Exception as e:
+                    print("Invalid function:", e)
+                    return
+            
+                self.ax.clear()
+                self.ax.plot(x, y, label=f"y = {function}", color='blue')
+                self.ax.fill_between(
+                    x, y, 0,
+                    where=(x > a) & (x < b),
+                    color='green', alpha=0.5
+                                    )
+                area1 = area[0]
+                self.area_label.setText(f"Area under the curve: {area1:.2f}")
+                self.ax.grid(True)
+                self.ax.legend()
+                self.canvas.draw()
+
 
     def local_min_max1(self):
         function  = self.input_function.text()
@@ -230,7 +246,6 @@ class GraphingCalculator(QWidget):
         self.local_min_max.hide()
         self.ax.clear()    
         self.ax.grid(True)
-
 
 if __name__ == "__main__":
     app = QApplication(sys.argv)
