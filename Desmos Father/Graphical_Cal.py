@@ -221,7 +221,7 @@ class GraphingCalculator(QWidget):
         self.figure.clear()
         ax = self.figure.add_subplot(111, projection="3d")
         self.cursor = Cursor(ax, horizOn=True, vertOn=True, useblit=True, color='red', linewidth=1)
-        ax.plot_surface(X, Y, Z, cmap="summer")
+        ax.plot_surface(Z, X, Y, cmap="summer")
         ax.set_xlabel("X Axis")
         ax.set_ylabel("Y Axis")
         ax.set_zlabel("Z Axis")
