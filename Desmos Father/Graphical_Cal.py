@@ -206,11 +206,9 @@ class GraphingCalculator(QWidget):
 
     def plot_surface(self):
         z = self.input_function.text()
-        a = float(self.point_a.text())
-        b = float(self.point_b.text())
 
-        x = np.arange(a, b, 0.1)
-        y = np.arange(a, b, 0.1)
+        x = np.arange(-10, 10, 0.1)
+        y = np.arange(-10, 10, 0.1)
 
         X, Y = np.meshgrid(x, y)
 
@@ -223,7 +221,7 @@ class GraphingCalculator(QWidget):
         self.figure.clear()
         ax = self.figure.add_subplot(111, projection="3d")
         self.cursor = Cursor(ax, horizOn=True, vertOn=True, useblit=True, color='red', linewidth=1)
-        ax.plot_surface(Z, X, Y, label=f"z = {z}", cmap="summer")
+        ax.plot_surface(X, Y, Z, cmap="summer")
         ax.set_xlabel("X Axis")
         ax.set_ylabel("Y Axis")
         ax.set_zlabel("Z Axis")
