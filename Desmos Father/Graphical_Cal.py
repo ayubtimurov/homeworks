@@ -112,7 +112,6 @@ class GraphingCalculator(QWidget):
             self.point_a.show()
             self.point_b.show()
             self.area_label.show()
-            self.local_min_max.show()
             
         else:
             self.diff_button.hide()
@@ -206,14 +205,16 @@ class GraphingCalculator(QWidget):
 
     def plot_surface(self):
         z = self.input_function.text()
+        point_a = float(self.point_a.text())
+        point_b = float(self.point_b.text())
 
-        x = np.arange(-10, 10, 0.1)
-        y = np.arange(-10, 10, 0.1)
+        x_data = np.arange(point_a, point_b, 0.1)
+        y_data = np.arange(point_a, point_b, 0.1)
 
-        X, Y = np.meshgrid(x, y)
+        X, Y = np.meshgrid(x_data, y_data)
 
         try:
-            Z = eval(z, {"x": x, "y": y, "np": np, "__builtins__": {}})
+            Z = eval(z, {"x": X, "y": Y, "np": np, "__builtins__": {}})
         except Exception as e:
             print("Invalid function:", e)
             return
@@ -221,7 +222,7 @@ class GraphingCalculator(QWidget):
         self.figure.clear()
         ax = self.figure.add_subplot(111, projection="3d")
         self.cursor = Cursor(ax, horizOn=True, vertOn=True, useblit=True, color='red', linewidth=1)
-        ax.plot_surface(Z, X, Y, cmap="summer")
+        ax.plot_surface(X, Y, Z, cmap="summer")
         ax.set_xlabel("X Axis")
         ax.set_ylabel("Y Axis")
         ax.set_zlabel("Z Axis")
