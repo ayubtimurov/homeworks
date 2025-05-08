@@ -1,10 +1,15 @@
-from scipy.integrate import dblquad
-from sympy import Symbol, integrate
+from scipy import differentiate
+import sympy as sp
+import numpy as np
+import matplotlib.pyplot as plt
 
-x = Symbol("x")
-y = Symbol("y")
-function = input(": ")
+x = sp.symbols("x")
+function = input("Enter: ")
 
-volume = dblquad(lambda x, y: function, 0, 1, 0, 1)
-
-print(volume)
+try: 
+    y = sp.sympify(function)
+    dfdx = sp.diff(y, x)
+    
+    print(dfdx)
+except ValueError:
+    print("error")
