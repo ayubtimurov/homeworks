@@ -3,7 +3,7 @@ import numpy as np
 import sympy as sp
 from sympy import Symbol
 from sympy.solvers import solve
-from PySide6.QtCore import Slot
+from PySide6.QtCore import Qt
 from PySide6.QtWidgets import (
     QApplication, QVBoxLayout, QLineEdit, QPushButton, QWidget, QLabel, QHBoxLayout, QGridLayout
 )
@@ -12,7 +12,7 @@ from matplotlib.backends.backend_qtagg import NavigationToolbar2QT as Navigation
 from matplotlib.figure import Figure
 from matplotlib.widgets import Cursor
 from scipy import integrate
-      
+
 class GraphingCalculator(QWidget):
     def __init__(self):
         super().__init__()
@@ -24,7 +24,6 @@ class GraphingCalculator(QWidget):
         self.plot_button = QPushButton("Plot")
         self.plot_button.clicked.connect(self.plot_graph)
         self.plot_button.clicked.connect(self.operations_2d)
-
 
         self.diff_button = QPushButton("Differentiate")
         self.diff_button.setCheckable(True)
@@ -50,32 +49,17 @@ class GraphingCalculator(QWidget):
         self.area_label = QLabel()
         self.area_label.hide()
 
+        self.range_label = QLabel("Set range for graph: [")
+        self.range_label_middle = QLabel(":")
+        self.range_label_end = QLabel("]")
+
         self.point_a = QLineEdit()
-        self.point_a.setPlaceholderText("Enter limit a")
+        self.point_a.setFixedWidth(30)
         self.point_b = QLineEdit()
-        self.point_b.setPlaceholderText("Enter limit b")
+        self.point_b.setFixedWidth(30)
 
         self.plot_surface_button = QPushButton("Plot surface")
         self.plot_surface_button.clicked.connect(self.plot_surface)
-        self.plot_surface_button.clicked.connect(self.operations_3d)
-
-        self.x_low_lim = QLineEdit()
-        self.x_low_lim.setPlaceholderText("Enter lower x limit")
-        self.x_low_lim.hide()
-        self.y_low_lim = QLineEdit()
-        self.y_low_lim.setPlaceholderText("Enter lower y limit")
-        self.y_low_lim.hide()
-        self.x_upper_lim = QLineEdit()
-        self.x_upper_lim.setPlaceholderText("Enter upper x limit")
-        self.x_upper_lim.hide()
-        self.y_upper_lim = QLineEdit()
-        self.y_upper_lim.setPlaceholderText("Enter upper y limit")
-        self.y_upper_lim.hide()
-
-        self.intg_volume_button = QPushButton("Calculate volume")
-        self.intg_volume_button.setCheckable(True)
-        self.intg_volume_button.hide()
-        self.intg_volume_button.clicked.connect(self.cal_vol)
 
         self.volume_label = QLabel()
         self.volume_label.hide()
@@ -92,9 +76,13 @@ class GraphingCalculator(QWidget):
         toolbar_layout.addWidget(toolbar)
         toolbar_layout.addWidget(self.clear_button)
 
-        a_b_lim_layout = QHBoxLayout()
-        a_b_lim_layout.addWidget(self.point_a)
-        a_b_lim_layout.addWidget(self.point_b)
+        range_layout = QHBoxLayout()
+        range_layout.setAlignment(Qt.AlignmentFlag.AlignCenter)
+        range_layout.addWidget(self.range_label)
+        range_layout.addWidget(self.point_a)
+        range_layout.addWidget(self.range_label_middle)
+        range_layout.addWidget(self.point_b)
+        range_layout.addWidget(self.range_label_end)
 
         input_layout = QHBoxLayout()
         input_layout.addWidget(self.input_function)
@@ -110,25 +98,16 @@ class GraphingCalculator(QWidget):
         limits_layout_2d.addWidget(self.x_low_lim_2d)
         limits_layout_2d.addWidget(self.x_upper_lim_2d)
 
-        lim_layout_3d = QGridLayout()
-        lim_layout_3d.addWidget(self.x_low_lim, 0, 0)
-        lim_layout_3d.addWidget(self.x_upper_lim, 1, 0)
-        lim_layout_3d.addWidget(self.y_low_lim, 0, 1)
-        lim_layout_3d.addWidget(self.y_upper_lim, 1, 1)
-
         layout = QVBoxLayout()
         layout.addLayout(toolbar_layout)
         layout.addLayout(input_layout)
-        layout.addLayout(a_b_lim_layout)
-        layout.addLayout(lim_layout_3d)
-        layout.addWidget(self.intg_volume_button)
+        layout.addLayout(range_layout)
         layout.addLayout(limits_layout_2d)
         layout.addLayout(operations_2d_layout)
         layout.addWidget(self.canvas)
         layout.addWidget(self.area_label)
 
         self.setLayout(layout)
-
 
     def operations_2d(self):
 
@@ -139,39 +118,16 @@ class GraphingCalculator(QWidget):
         self.x_upper_lim_2d.show()
         self.area_label.show()
 
-        self.x_low_lim.hide()
-        self.x_upper_lim.hide()
-        self.y_low_lim.hide()
-        self.y_upper_lim.hide()
-        self.intg_volume_button.hide()
-
-    def operations_3d(self):
-
-        self.x_low_lim.show()
-        self.x_upper_lim.show()
-        self.y_low_lim.show()
-        self.y_upper_lim.show()
-        self.intg_volume_button.show()
-
-        self.diff_button.hide()
-        self.intg_area_button.hide()
-        self.local_min_max_button.hide()
-        self.x_low_lim_2d.hide()
-        self.x_upper_lim_2d.hide()
-        self.area_label.hide()
-
     def plot_graph(self):
         function  = self.input_function.text()
-        point_a = float(self.point_a.text())
-        point_b = float(self.point_b.text())
-        x = np.linspace(point_a, point_b, 400) 
+        x = np.linspace(-10, 10, 400) 
 
         try:
-            y = eval(function, {"x": x, "np": np, "__builtins__": {}})
+            y = eval(function, {"x": x, "np": np, "log": np.log,  "__builtins__": {}})
         except Exception as e:
             print("Invalid function:", e)
             return
-        
+
         self.figure.clear()
         ax = self.figure.add_subplot(111)
         self.cursor = Cursor(ax, horizOn=True, vertOn=True, useblit=True, color='red', linewidth=1)
@@ -248,25 +204,25 @@ class GraphingCalculator(QWidget):
             function = self.input_function.text()
             point_a = float(self.point_a.text())
             point_b = float(self.point_b.text())
-            x_low_lim = float(self.x_low_lim_2d.text())
-            x_upper_lim = float(self.x_upper_lim_2d.text())
+            x1 = float(self.x_low_lim_2d.text())
+            x2 = float(self.x_upper_lim_2d.text())
             x = np.linspace(point_a, point_b, 400)
 
             expression = lambda x: eval(function)
-            area = integrate.quad(expression, x_low_lim, x_upper_lim)
+            area = integrate.quad(expression, x1, x2)
 
             try:
                 y = eval(function)
             except Exception as e:
                 print("Invalid function", e)
                 return
-            
+
             self.figure.clear()
             ax = self.figure.add_subplot(111)
             ax.plot(x, y, label=f"y = {function}", color='blue')
             ax.fill_between(
                     x, y, 0,
-                    where=(x > x_low_lim) & (x < x_upper_lim),
+                    where=(x > x1) & (x < x2),
                     color='green', alpha=0.5
                             )
             area1 = area[0]
@@ -290,7 +246,7 @@ class GraphingCalculator(QWidget):
         except Exception as e:
             print("Invalid function:", e)
             return
-        
+
         self.figure.clear()
         ax = self.figure.add_subplot(111, projection="3d")
         self.cursor = Cursor(ax, horizOn=True, vertOn=True, useblit=True, color='red', linewidth=1)
@@ -299,55 +255,7 @@ class GraphingCalculator(QWidget):
         ax.set_ylabel("Y Axis")
         ax.set_zlabel("Z Axis")
         self.canvas.draw()
-
-    def cal_vol(self, checked):
-        z = self.input_function.text()
-        point_a = float(self.point_a.text())
-        point_b = float(self.point_b.text())
-
-        x_data = np.arange(point_a, point_b, 0.1)
-        y_data = np.arange(point_a, point_b, 0.1)
-
-        X, Y = np.meshgrid(x_data, y_data)
-
-        if checked:
-            x_low_lim = float(self.x_low_lim.text())
-            x_upper_lim = float(self.x_upper_lim.text())
-            y_low_lim = float(self.y_low_lim.text())
-            y_upper_lim = float(self.y_upper_lim.text())
-
-            try:
-                Z = eval(z, {"x": X, "y": Y, "np": np, "__builtins__": {}})
-            except Exception as e:
-                print("Invalid function")
-                return
-            
-            self.figure.clear()
-            ax = self.figure.add_subplot(111, projection="3d")
-            ax.plot_surface(X, Y, Z, cmap="summer")
-            cset = ax.contourf(X, Y, Z, zdir="z", offset=-2, cmap="viridis", levels=20, alpha=1)
-            ax.set_xlim(x_low_lim, x_upper_lim)
-            ax.set_ylim(y_low_lim, y_upper_lim)
-            ax.set_zlim(np.min(Z)-2, np.max(Z))
-            ax.set_xlabel("X Axis")
-            ax.set_ylabel("Y Axis")
-            ax.set_zlabel("Z Axis")
-            self.canvas.draw()
-
-        else:
-            try:
-                Z = eval(z, {"x": X, "y": Y, "np": np, "__builtins__": {}})
-            except Exception as e:
-                print("Invalid function", e)
-                return
-            self.figure.clear()
-            ax = self.figure.add_subplot(111, projection="3d")
-            ax.plot_surface(X, Y, Z, cmap="summer")
-            ax.set_xlabel("X Axis")
-            ax.set_ylabel("Y Axis")
-            ax.set_zlabel("Z Axis")
-            self.canvas.draw()
-            
+       
     def clear(self):
         self.input_function.clear()
         self.point_a.clear()
@@ -357,15 +265,14 @@ class GraphingCalculator(QWidget):
         self.intg_volume_button.hide()
         self.x_low_lim_2d.hide()
         self.x_upper_lim_2d.hide()
-        self.x_low_lim.hide()
-        self.x_upper_lim.hide()
-        self.y_low_lim.hide()
-        self.y_upper_lim.hide()
+        self.x1.hide()
+        self.x2.hide()
+        self.y1.hide()
+        self.y2.hide()
         self.area_label.hide()
         self.figure.clear()
 
 
-        
 if __name__ == "__main__":
     app = QApplication(sys.argv)
     window = GraphingCalculator()
