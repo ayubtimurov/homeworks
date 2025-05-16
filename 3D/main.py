@@ -1,16 +1,19 @@
-import matplotlib.pyplot as plt
-from mpl_toolkits.mplot3d import Axes3D
+import sympy as sp
+import numpy as np
+import math
 
-fig = plt.figure()
-ax = fig.add_subplot(111, projection='3d')
+x = sp.Symbol("x")
+expression = input("Enter your function: ")
+f = sp.sympify(expression)
+n = int(input("Order of differentiating: "))
+a = float(input("Differentiate at point: "))
 
-x = [1, 2, 3, 4, 5]
-y = [2, 4, 6, 8, 10]
-z = [3, 6, 9, 12, 15]
+f_prime = sp.diff(f, x, n)
 
-ax.plot(x, y, z, 'b-', linewidth=2)
-ax.set_title('3D Line Plot')
-ax.set_xlabel('X Axis')
-ax.set_ylabel('Y Axis')
-ax.set_zlabel('Z Axis')
-plt.show()
+f_prime_str = str(f_prime)
+f_prime_evaluated = lambda x: eval(f_prime_str)
+f_prime_of_a = f_prime_evaluated(a)
+
+print("Original function: ",expression)
+print(f"Derivative of order {n}: ",f_prime)
+print(f"Derivative at point {a}: ", f_prime_of_a)

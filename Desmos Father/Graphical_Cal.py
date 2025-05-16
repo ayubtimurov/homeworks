@@ -164,6 +164,7 @@ class GraphingCalculator(QWidget):
 
         self.figure.clear()
         ax = self.figure.add_subplot(111)
+        ax.set_ylim(-10, 10)
         self.cursor = Cursor(ax, horizOn=True, vertOn=True, useblit=True, color='red', linewidth=1)
         ax.plot(x, y, label=f"y = {function}", color='blue')
         ax.grid(True)  
@@ -352,40 +353,24 @@ class GraphingCalculator(QWidget):
 
     def taylor_series_plot(self):
         
-        def taylor_series(function, variable, a, n):
+        def taylor_series(function, a, n):
 
             i = 0
             taylor = 0
-            while i <= n:
-                p = (function.diff(variable, i).subs(variable, a) / sp.factorial(i)) * (variable - a)**i
-                taylor += p
+            for i in range(n):
+                f_prime = diff(function, x, n)
+                term = (f_prime(a) / factorial(i)) * (x - a)**i
+                taylor += term
                 i += 1
-            return
-    
+            return taylor
+
         x = Symbol("x")
         expression = self.input_function.text()
         function = lambda x: eval(expression)
         a = float(self.taylor_series_at_point.text())
         n = int(self.number_of_terms.text())
-        taylor_expansion = taylor_series(function, x, a, n)
+        taylor_expansion = taylor_series(function)
         print(taylor_expansion)
-
-        point_a = float(self.point_a.text())
-        point_b = float(self.point_b.text())
-        x_vals = np.linspace(point_a, point_b, 400)
-
-        try:
-            y = eval(function, {"x": x, "np": np, "__builtins__": {}})
-        except Exception as e:
-            print("Value Error", e)
-            return
-        
-        self.figure.clear()
-        ax = self.figure.add_subplot(111)
-        ax.plot(x_vals, y, label=f"y = {function}", color="blue")
-        ax.grid(True)
-        ax.legend()
-        self.canvas.draw()
 
     def plot_surface(self):
         z = self.input_function.text()

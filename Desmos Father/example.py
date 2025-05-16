@@ -1,20 +1,29 @@
-import sympy
-from sympy import *
+import sympy as sp
+import numpy as np
+import math
 
-def taylor_series(function, variable, at_point, n):
+x = sp.Symbol("x")
+expression = input("Enter your function: ")
+f = sp.sympify(expression)
+n = int(input("Number of terms: "))
+a = float(input("Centered at point: "))
+
+def taylor_series(f_prime, a, n):
 
     i = 0
-    taylor = 0
-    while i <= n:
-        p = (function.diff(variable, i).subs(variable, at_point) / factorial(i)) * (variable - at_point)**i
-        taylor += p
-        i += 1
+    taylor = ""
+
+    for i in range(n):
+        f_prime = sp.diff(f, x, n)
+
+        f_prime_str = str(f_prime)
+        f_prime_evaluated = lambda x: eval(f_prime_str)
+        f_prime_of_a = f_prime_evaluated(a)
+
+        term = (f_prime_of_a / math.factorial(i)) * (x - a)**i
+        
+        taylor += str(term)
     return taylor
 
-x = symbols('x')
-function = sin(x) 
-at_point = 0      
-n = 4             
-
-taylor_expansion = taylor_series(function, x, at_point, n)
+taylor_expansion = taylor_series(f, a, n)
 print(taylor_expansion)
