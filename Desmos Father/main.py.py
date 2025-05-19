@@ -1,18 +1,15 @@
 import sys
 import numpy as np
 import sympy as sp
-import sympy
-from sympy import *
-from sympy import Symbol
-from sympy.solvers import solve
-from PySide6.QtCore import Qt
 from PySide6.QtWidgets import (
-    QApplication, QVBoxLayout, QLineEdit, QPushButton, QWidget, QLabel, QHBoxLayout, QSlider
+    QApplication, QVBoxLayout, QLineEdit, QPushButton, QWidget, QLabel, QHBoxLayout, QGridLayout
 )
 from matplotlib.backends.backend_qt5agg import FigureCanvasQTAgg as FigureCanvas
 from matplotlib.backends.backend_qtagg import NavigationToolbar2QT as NavigationToolbar
 from matplotlib.figure import Figure
 from matplotlib.widgets import Cursor
+import matplotlib.pyplot as plt
+from mpl_interactions import ioff, panhandler, zoom_factory
 from scipy import integrate
 
 class GraphingCalculator(QWidget):
@@ -26,10 +23,6 @@ class GraphingCalculator(QWidget):
         self.plot_button = QPushButton("Plot")
         self.plot_button.clicked.connect(self.plot_graph)
 
-        self.range_label = QLabel("Set range for graph: [")
-        self.range_label_middle = QLabel(":")
-        self.range_label_end = QLabel("]")
-
         self.diff_button = QPushButton("Differentiate")
         self.diff_button.setCheckable(True)
         self.diff_button.hide()
@@ -38,56 +31,51 @@ class GraphingCalculator(QWidget):
         self.intg_area_button = QPushButton("Calculate area")
         self.intg_area_button.setCheckable(True)
         self.intg_area_button.hide()
-        self.intg_area_button.clicked.connect(self.integrate)
-
-        self.local_min_max_button = QPushButton("Local Min/Max")
-        self.local_min_max_button.setCheckable(True)
-        self.local_min_max_button.hide()
-        self.local_min_max_button.clicked.connect(self.local_min_max)
+        self.intg_area_button.clicked.connect(self.intg_area)
 
         self.tangent_line_button = QPushButton("Tangent Line")
         self.tangent_line_button.setCheckable(True)
         self.tangent_line_button.hide()
         self.tangent_line_button.clicked.connect(self.plot_tangent_line)
 
-        self.x_low_lim_2d = QLineEdit()
-        self.x_low_lim_2d.setPlaceholderText("Enter lower x limit")
-        self.x_low_lim_2d.hide()
-        self.x_upper_lim_2d = QLineEdit()
-        self.x_upper_lim_2d.setPlaceholderText("Enter upper x limit")
-        self.x_upper_lim_2d.hide()
+        self.local_min_max_button = QPushButton("Local Min/Max")
+        self.local_min_max_button.setCheckable(True)
+
+        self.x1_2d = QLineEdit()
+        self.x1_2d.setPlaceholderText("Enter lower x limit")
+        self.x1_2d.hide()
+        self.x2_2d = QLineEdit()
+        self.x2_2d.setPlaceholderText("Enter upper x limit")
+        self.x2_2d.hide()
+
+        self.area_label = QLabel()
+        self.area_label.hide()
 
         self.tangent_line_point = QLineEdit()
         self.tangent_line_point.setPlaceholderText("Tangent line at a point")
         self.tangent_line_point.hide()
 
-        self.tangent_line_point_slider = QSlider(Qt.Horizontal)
-        #self.tangent_line_point_slider.hide()
-        self.tangent_line_point_slider.setMinimum(-10)
-        self.tangent_line_point_slider.setMaximum(10)
-        self.tangent_line_point_slider.setTickInterval(1)
-        self.tangent_line_point_slider.setTickPosition(QSlider.TicksBelow)
-        self.tangent_line_point_slider.valueChanged.connect(self.plot_tangent_line)
-
-        self.area_label = QLabel()
-        self.area_label.hide()
-
-        self.point_a = QLineEdit()
-        self.point_a.setFixedWidth(30)
-        self.point_b = QLineEdit()
-        self.point_b.setFixedWidth(30)
-
-        self.taylor_series_at_point = QLineEdit()
-        self.taylor_series_at_point.setPlaceholderText("Taylot series at a point")
-
-        self.number_of_terms = QLineEdit()
-        self.number_of_terms.setPlaceholderText("Number of terms")
-
-        self.plot_taylor_series = QPushButton("Taylor series")
-        self.plot_taylor_series.clicked.connect(self.taylor_series_plot)
-
         self.plot_surface_button = QPushButton("Plot surface")
         self.plot_surface_button.clicked.connect(self.plot_surface)
+
+        self.intg_volume_button = QPushButton("Calculate Volume")
+        self.intg_volume_button.setCheckable(True)
+        self.intg_volume_button.hide()
+        self.intg_volume_button.clicked.connect(self.intg_volume)
+
+        self.x1_3d = QLineEdit()
+        self.x1_3d.hide()
+        self.x1_3d.setPlaceholderText("Enter lower x limit")
+        self.x2_3d = QLineEdit()
+        self.x2_3d.hide()
+        self.x2_3d.setPlaceholderText("Enter upper x limit")
+        
+        self.y1_3d = QLineEdit()
+        self.y1_3d.hide()
+        self.y1_3d.setPlaceholderText("Enter lower y limit")
+        self.y2_3d = QLineEdit()
+        self.y2_3d.hide()
+        self.y2_3d.setPlaceholderText("Enter upper y limit")
 
         self.volume_label = QLabel()
         self.volume_label.hide()
@@ -104,14 +92,6 @@ class GraphingCalculator(QWidget):
         toolbar_layout.addWidget(toolbar)
         toolbar_layout.addWidget(self.clear_button)
 
-        range_layout = QHBoxLayout()
-        range_layout.setAlignment(Qt.AlignmentFlag.AlignCenter)
-        range_layout.addWidget(self.range_label)
-        range_layout.addWidget(self.point_a)
-        range_layout.addWidget(self.range_label_middle)
-        range_layout.addWidget(self.point_b)
-        range_layout.addWidget(self.range_label_end)
-
         input_layout = QHBoxLayout()
         input_layout.addWidget(self.input_function)
         input_layout.addWidget(self.plot_button)
@@ -120,44 +100,50 @@ class GraphingCalculator(QWidget):
         operations_2d_layout = QHBoxLayout()
         operations_2d_layout.addWidget(self.diff_button)
         operations_2d_layout.addWidget(self.intg_area_button)
-        operations_2d_layout.addWidget(self.local_min_max_button)
         operations_2d_layout.addWidget(self.tangent_line_button)
-        operations_2d_layout.addWidget(self.plot_taylor_series)
 
         limits_layout_2d = QHBoxLayout()
-        limits_layout_2d.addWidget(self.x_low_lim_2d)
-        limits_layout_2d.addWidget(self.x_upper_lim_2d)
+        limits_layout_2d.addWidget(self.x1_2d)
+        limits_layout_2d.addWidget(self.x2_2d)
         limits_layout_2d.addWidget(self.tangent_line_point)
-        limits_layout_2d.addWidget(self.taylor_series_at_point)
-        limits_layout_2d.addWidget(self.number_of_terms)
+
+        limits_layout_3d = QGridLayout()
+        limits_layout_3d.addWidget(self.x1_3d, 0, 0)
+        limits_layout_3d.addWidget(self.x2_3d, 1, 0)
+        limits_layout_3d.addWidget(self.y1_3d, 0, 1)
+        limits_layout_3d.addWidget(self.y2_3d, 1, 1)
 
         layout = QVBoxLayout()
         layout.addLayout(toolbar_layout)
         layout.addLayout(input_layout)
-        layout.addLayout(range_layout)
         layout.addLayout(limits_layout_2d)
         layout.addLayout(operations_2d_layout)
+        layout.addLayout(limits_layout_3d)
+        layout.addWidget(self.intg_volume_button)
         layout.addWidget(self.canvas)
         layout.addWidget(self.area_label)
+        layout.addWidget(self.volume_label)
 
         self.setLayout(layout)
 
     def plot_graph(self):
         self.diff_button.show()
         self.intg_area_button.show()
-        self.local_min_max_button.show()
         self.tangent_line_button.show()
-        self.x_low_lim_2d.show()
-        self.x_upper_lim_2d.show()
+        self.x1_2d.show()
+        self.x2_2d.show()
         self.tangent_line_point.show()
+        self.x1_3d.hide()
+        self.x2_3d.hide()
+        self.y1_3d.hide()
+        self.y2_3d.hide()
+        self.intg_volume_button.hide()
 
         function  = self.input_function.text()
-        point_a = float(self.point_a.text())
-        point_b = float(self.point_b.text())
-        x = np.linspace(point_a, point_b, 400) 
+        x = np.linspace(-1000, 1000, 100000)
 
         try:
-            y = eval(function, {"x": x, "np": np, "log": np.log,  "__builtins__": {}})
+            y = eval(function, {"x": x, "np": np, "__builtins__": {}})
         except Exception as e:
             print("Invalid function:", e)
             return
@@ -165,45 +151,18 @@ class GraphingCalculator(QWidget):
         self.figure.clear()
         ax = self.figure.add_subplot(111)
         ax.set_ylim(-10, 10)
+        ax.set_xlim(-10, 10)
         self.cursor = Cursor(ax, horizOn=True, vertOn=True, useblit=True, color='red', linewidth=1)
         ax.plot(x, y, label=f"y = {function}", color='blue')
+        disconnect_zoom = zoom_factory(ax)
+        pan_handler = panhandler(self.figure)
         ax.grid(True)  
         ax.legend()
         self.canvas.draw()
 
-    def local_min_max(self, checked):
-        function  = self.input_function.text()
-        point_a = float(self.point_a.text())
-        point_b = float(self.point_b.text())
-        x_val = np.linspace(point_a, point_b, 400) 
-
-        if checked:
-            try:
-                y = eval(function, {"x": x_val, "np": np, "__builtins__": {}})
-
-                x = sp.Symbol("x")
-                expression = sp.sympify(function)
-                f_prime = sp.diff(expression, x) 
-                print(f_prime)
-                roots = solve(f_prime, x, dict=True)
-                print(roots)
-            except Exception as e:
-                print("Invalid function:", e)
-                return
-
-            self.figure.clear()
-            ax = self.figure.add_subplot(111)
-            self.cursor = Cursor(ax, horizOn=True, vertOn=True, useblit=True, color='red', linewidth=1)
-            ax.plot(x_val, y, label=f"y = {function}", color='blue')
-            ax.grid(True)  
-            ax.legend()
-            self.canvas.draw()
-
     def plot_tangent_line(self, checked):
         function = self.input_function.text()
-        point_a = float(self.point_a.text())
-        point_b = float(self.point_b.text())
-        x = np.linspace(point_a, point_b, 1000)
+        x = np.linspace(-10, 10, 40000)
 
         if checked:
             f = lambda x: eval(function)
@@ -212,7 +171,7 @@ class GraphingCalculator(QWidget):
             h = 1e-8
 
             m = (f(a+h) - f(a)) / h
-            b = f(a) - m * a
+            b = f(a) - m * a 
             sign = "-" if b < 0 else "+"
 
             tangent = f(a) + m * (x-a)
@@ -223,24 +182,25 @@ class GraphingCalculator(QWidget):
                 print("Invalid function", e)
                 return
             
+            self.figure.clear()
+            ax = self.figure.add_subplot(111)
+            disconnect_zoom = zoom_factory(ax)
+            pan_handler = panhandler(self.figure)
+            self.cursor = Cursor(ax, horizOn=True, vertOn=True, useblit=True, color='red', linewidth=1)
+            ax.set_ylim(-10, 10)
+            ax.set_xlim(-10, 10)
+            ax.plot(x, y, label=f"y = {function}", color="blue")
             if m == 0 and b == 0:
-                self.figure.clear()
-                ax = self.figure.add_subplot(111)
-                ax.plot(x, y, label=f"y = {function}", color="blue")
-                ax.plot(x, tangent, label=f"Tangent Line: y = 0 ", color="black")
-                self.cursor = Cursor(ax, horizOn=True, vertOn=True, useblit=True, color='red', linewidth=1)
-                ax.grid(True)
-                ax.legend()
-                self.canvas.draw()
+                ax.plot(x, tangent, label=f"Tangent Line: y = 0 ", color="purple")
+            elif b == 0:
+                ax.plot(x, tangent, label=f"Tangent Line: y = {m:.1f}*x", color="purple")
+            elif m == 0:
+                ax.plot(x, tangent, label=f"Tangent Line: y = {b:.1f}", color="purple")
             else:
-                self.figure.clear()
-                ax = self.figure.add_subplot(111)
-                ax.plot(x, y, label=f"y = {function}", color="blue")
-                ax.plot(x, tangent, label=f"Tangent Line: y = {m:.1f}*x {sign} {abs(b):.1f} ", color="black")
-                self.cursor = Cursor(ax, horizOn=True, vertOn=True, useblit=True, color='red', linewidth=1)
-                ax.grid(True)
-                ax.legend()
-                self.canvas.draw()
+                ax.plot(x, tangent, label=f"Tangent Line: y = {m:.1f}*x {sign} {abs(b):.1f}", color="purple")
+            ax.grid(True)
+            ax.legend()
+            self.canvas.draw()
         else:
             try:
                 y = eval(function, {"x": x, "np": np, "__builtins__": {}})
@@ -250,6 +210,10 @@ class GraphingCalculator(QWidget):
             
             self.figure.clear()
             ax = self.figure.add_subplot(111)
+            disconnect_zoom = zoom_factory(ax)
+            pan_handler = panhandler(self.figure)
+            ax.set_ylim(-10, 10)
+            ax.set_xlim(-10, 10)
             ax.plot(x, y, label=f"y = {function}", color="blue")
             self.cursor = Cursor(ax, horizOn=True, vertOn=True, useblit=True, color='red', linewidth=1)
             ax.grid(True)
@@ -257,9 +221,7 @@ class GraphingCalculator(QWidget):
 
     def differentiate(self, checked):
         function = self.input_function.text()
-        point_a = float(self.point_a.text())
-        point_b = float(self.point_b.text())
-        x = np.linspace(point_a, point_b, 1000)
+        x = np.linspace(-1000, 1000, 10000)
 
         if checked:
             try:
@@ -273,6 +235,10 @@ class GraphingCalculator(QWidget):
 
             self.figure.clear()
             ax = self.figure.add_subplot(111)
+            disconnect_zoom = zoom_factory(ax)
+            pan_handler = panhandler(self.figure)
+            ax.set_ylim(-10, 10)
+            ax.set_xlim(-10, 10)
             self.cursor = Cursor(ax, horizOn=True, vertOn=True, useblit=True, color='red', linewidth=1)
             ax.plot(x, y, label=f"y = {function}", color='blue')
             ax.plot(x, dfdx, label=f"y = {f_prime}", color="red")
@@ -289,19 +255,21 @@ class GraphingCalculator(QWidget):
 
             self.figure.clear()
             ax = self.figure.add_subplot(111)
+            disconnect_zoom = zoom_factory(ax)
+            pan_handler = panhandler(self.figure)
+            ax.set_ylim(-10, 10)
+            ax.set_xlim(-10, 10)
             self.cursor = Cursor(ax, horizOn=True, vertOn=True, useblit=True, color='red', linewidth=1)
             ax.plot(x, y, label=f"y = {function}", color='blue')
             ax.grid(True)
             ax.legend()  
             self.canvas.draw()
 
-    def integrate(self, checked):
+    def intg_area(self, checked):
             function = self.input_function.text()
-            point_a = float(self.point_a.text())
-            point_b = float(self.point_b.text())
-            x1 = float(self.x_low_lim_2d.text())
-            x2 = float(self.x_upper_lim_2d.text())
-            x = np.linspace(point_a, point_b, 400)
+            x1 = float(self.x1_2d.text())
+            x2 = float(self.x2_2d.text())
+            x = np.linspace(-1000, 1000, 10000)
 
             if checked:
                 expression = lambda x: eval(function)
@@ -315,6 +283,10 @@ class GraphingCalculator(QWidget):
 
                 self.figure.clear()
                 ax = self.figure.add_subplot(111)
+                disconnect_zoom = zoom_factory(ax)
+                pan_handler = panhandler(self.figure)
+                ax.set_ylim(-10, 10)
+                ax.set_xlim(-10, 10)
                 ax.plot(x, y, label=f"y = {function}", color='blue')
                 ax.fill_between(
                     x, y, 0,
@@ -329,9 +301,7 @@ class GraphingCalculator(QWidget):
                 self.canvas.draw()
             else:
                 function  = self.input_function.text()
-                point_a = float(self.point_a.text())
-                point_b = float(self.point_b.text())
-                x = np.linspace(point_a, point_b, 400) 
+                x = np.linspace(-1000, 1000, 10000) 
 
                 try:
                     y = eval(function, {"x": x, "np": np, "log": np.log,  "__builtins__": {}})
@@ -341,6 +311,10 @@ class GraphingCalculator(QWidget):
 
                 self.figure.clear()
                 ax = self.figure.add_subplot(111)
+                disconnect_zoom = zoom_factory(ax)
+                pan_handler = panhandler(self.figure)
+                ax.set_ylim(-10, 10)
+                ax.set_xlim(-10, 10)
                 self.cursor = Cursor(ax, horizOn=True, vertOn=True, useblit=True, color='red', linewidth=1)
                 ax.plot(x, y, label=f"y = {function}", color='blue')
                 self.area_label.hide()
@@ -348,48 +322,33 @@ class GraphingCalculator(QWidget):
                 ax.legend()
                 self.canvas.draw()
 
-                self.x_low_lim_2d.clear()
-                self.x_upper_lim_2d.clear()
-
-    def taylor_series_plot(self):
-        
-        def taylor_series(function, a, n):
-
-            i = 0
-            taylor = 0
-            for i in range(n):
-                f_prime = diff(function, x, n)
-                term = (f_prime(a) / factorial(i)) * (x - a)**i
-                taylor += term
-                i += 1
-            return taylor
-
-        x = Symbol("x")
-        expression = self.input_function.text()
-        function = lambda x: eval(expression)
-        a = float(self.taylor_series_at_point.text())
-        n = int(self.number_of_terms.text())
-        taylor_expansion = taylor_series(function)
-        print(taylor_expansion)
+                self.x1_2d.clear()
+                self.x2_2d.clear()
 
     def plot_surface(self):
+        self.x1_3d.show()
+        self.x2_3d.show()
+        self.y1_3d.show()
+        self.y2_3d.show()
+        self.intg_volume_button.show()
+        
         z = self.input_function.text()
-        point_a = float(self.point_a.text())
-        point_b = float(self.point_b.text())
 
-        x_data = np.arange(point_a, point_b, 0.1)
-        y_data = np.arange(point_a, point_b, 0.1)
+        x_data = np.arange(-10, 10, 0.1)
+        y_data = np.arange(-10, 10, 0.1)
 
         X, Y = np.meshgrid(x_data, y_data)
 
         try:
-            Z = eval(z, {"x": X, "y": Y, "np": np, "__builtins__": {}})
+            Z = eval(z, {"x": X, "y": Y, "np": np, "cos": np.cos, "sin": np.sin, "__builtins__": {}})
         except Exception as e:
             print("Invalid function:", e)
             return
 
         self.figure.clear()
         ax = self.figure.add_subplot(111, projection="3d")
+        disconnect_zoom = zoom_factory(ax)
+        pan_handler = panhandler(self.figure)
         self.cursor = Cursor(ax, horizOn=True, vertOn=True, useblit=True, color='red', linewidth=1)
         ax.plot_surface(X, Y, Z, cmap="summer")
         ax.set_xlabel("X Axis")
@@ -399,26 +358,101 @@ class GraphingCalculator(QWidget):
 
         self.diff_button.hide()
         self.intg_area_button.hide()
-        self.local_min_max_button.hide()
-        self.x_low_lim_2d.hide()
-        self.x_upper_lim_2d.hide()
+        self.x1_2d.hide()
+        self.x2_2d.hide()
         self.area_label.hide()
-       
-    def reset(self):
-        self.input_function.clear()
-        self.point_a.clear()
-        self.point_b.clear()
+        self.tangent_line_button.hide()
+        self.tangent_line_point.hide()
+      
+    def intg_volume(self, checked):
+        z = self.input_function.text()
+        x1 = int(self.x1_3d.text())
+        x2 = int(self.x2_3d.text())
+        y1 = int(self.y1_3d.text())
+        y2 = int(self.y2_3d.text())
+
+        x_data = np.arange(-10, 10, 0.1)
+        y_data = np.arange(-10, 10, 0.1)
+
+        X, Y = np.meshgrid(x_data, y_data)
+
+        if checked:
+
+            expression = lambda x, y: eval(z)
+            volume = integrate.dblquad(expression, x1, x2, y1, y2)
+
+            try:
+                Z = eval(z, {"x": X, "y": Y, "np": np, "cos": np.cos, "sin": np.sin, "__builtins__": {}})
+            except Exception as e:
+                print("Invalid function:", e)
+                return
+
+            self.figure.clear()
+            ax = self.figure.add_subplot(111, projection="3d")
+            disconnect_zoom = zoom_factory(ax)
+            pan_handler = panhandler(self.figure)
+            self.cursor = Cursor(ax, horizOn=True, vertOn=True, useblit=True, color='red', linewidth=1)
+            ax.plot_surface(X, Y, Z, cmap="summer")
+            ax.set_xlabel("X Axis")
+            ax.set_ylabel("Y Axis")
+            ax.set_zlabel("Z Axis")
+            volume1 = volume[0]
+            self.volume_label.show()
+            self.volume_label.setText(f"Volume under the surface is: {volume1:.2f}")
+            self.diff_button.hide()
+            self.intg_area_button.hide()
+            self.x1_2d.hide()
+            self.x2_2d.hide()
+            self.area_label.hide()
+            self.canvas.draw()
+
+        else:
+
+            self.x1_3d.clear()
+            self.x2_3d.clear()
+            self.y1_3d.clear()
+            self.y2_3d.clear()
+
+            try:
+                Z = eval(z, {"x": X, "y": Y, "np": np, "cos": np.cos, "sin": np.sin, "__builtins__": {}})
+            except Exception as e:
+                print("Invalid function:", e)
+                return
+
+            self.figure.clear()
+            ax = self.figure.add_subplot(111, projection="3d")
+            disconnect_zoom = zoom_factory(ax)
+            pan_handler = panhandler(self.figure)
+            self.cursor = Cursor(ax, horizOn=True, vertOn=True, useblit=True, color='red', linewidth=1)
+            ax.plot_surface(X, Y, Z, cmap="summer")
+            ax.set_xlabel("X Axis")
+            ax.set_ylabel("Y Axis")
+            ax.set_zlabel("Z Axis")
+            self.canvas.draw()
+
         self.diff_button.hide()
         self.intg_area_button.hide()
-        self.local_min_max_button.hide()
+        self.x1_2d.hide()
+        self.x2_2d.hide()
+        self.area_label.hide()
+
+    def reset(self):
+        self.input_function.clear()
+        self.diff_button.hide()
+        self.intg_area_button.hide()
         self.tangent_line_button.hide()
-        self.x_low_lim_2d.hide()
-        self.x_low_lim_2d.clear()
-        self.x_upper_lim_2d.hide()
-        self.x_upper_lim_2d.clear()
+        self.x1_2d.hide()
+        self.x1_2d.clear()
+        self.x2_2d.hide()
+        self.x2_2d.clear()
         self.tangent_line_point.hide()
         self.tangent_line_point.clear()
         self.area_label.hide()
+        self.x1_3d.hide()
+        self.x2_3d.hide()
+        self.y1_3d.hide()
+        self.y2_3d.hide()
+        self.intg_volume_button.hide()
         self.figure.clear()
 
 
